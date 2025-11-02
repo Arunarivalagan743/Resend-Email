@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { FaFlask, FaEnvelope, FaRocket, FaCheckCircle, FaTimesCircle, FaInfoCircle, FaExclamationTriangle } from 'react-icons/fa';
 
 const EmailForm = ({ apiStatus }) => {
   const [activeTab, setActiveTab] = useState('test');
@@ -8,6 +9,123 @@ const EmailForm = ({ apiStatus }) => {
   const [response, setResponse] = useState(null);
   
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+  const isDevelopmentMode = import.meta.env.DEV || process.env.NODE_ENV === 'development';
+
+  // Admin test accounts for development
+  const adminTestAccounts = [
+    'admin@test.com',
+    'test@admin.com',
+    'developer@test.com',
+    'demo@test.com'
+  ];
+
+  // Common hosted domains that need verification
+  const hostedDomains = [
+    'gmail.com',
+    'yahoo.com',
+    'outlook.com',
+    'hotmail.com',
+    'icloud.com',
+    'protonmail.com',
+    'aol.com'
+  ];
+
+  useEffect(() => {
+    // Show development mode toast on component mount
+    if (isDevelopmentMode) {
+      toast((t) => (
+        <div className="toast-content">
+          <FaInfoCircle className="toast-icon info" />
+          <div>
+            <strong>Development Mode Active</strong>
+            <br />
+            <small>Using test environment for email sending</small>
+          </div>
+        </div>
+      ), {
+        duration: 4000,
+        position: 'top-right',
+        style: {
+          background: '#e3f2fd',
+          color: '#1976d2',
+          border: '1px solid #bbdefb'
+        }
+      });
+    }
+  }, [isDevelopmentMode]);
+
+  // Helper function to check if email is admin test account
+  const isAdminTestAccount = (email) => {
+    return adminTestAccounts.some(admin => email.toLowerCase().includes(admin.toLowerCase()));
+  };
+
+  // Helper function to check if email uses hosted domain
+  const isHostedDomain = (email) => {
+    const domain = email.split('@')[1]?.toLowerCase();
+    return hostedDomains.includes(domain);
+  };
+
+  // Enhanced toast notifications based on email type
+  const showEmailTypeToast = (email, emailType = 'test') => {
+    if (isAdminTestAccount(email)) {
+      toast((t) => (
+        <div className="toast-content">
+          <FaCheckCircle className="toast-icon success" />
+          <div>
+            <strong>Admin Test Account Detected</strong>
+            <br />
+            <small>Email will be sent to testing account: {email}</small>
+          </div>
+        </div>
+      ), {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: '#e8f5e8',
+          color: '#2e7d32',
+          border: '1px solid #c8e6c9'
+        }
+      });
+    } else if (isHostedDomain(email)) {
+      toast((t) => (
+        <div className="toast-content">
+          <FaExclamationTriangle className="toast-icon warning" />
+          <div>
+            <strong>Hosted Domain Detected</strong>
+            <br />
+            <small>Please verify domain ownership for: {email.split('@')[1]}</small>
+          </div>
+        </div>
+      ), {
+        duration: 5000,
+        position: 'top-right',
+        style: {
+          background: '#fff3e0',
+          color: '#f57c00',
+          border: '1px solid #ffcc02'
+        }
+      });
+    } else {
+      toast((t) => (
+        <div className="toast-content">
+          <FaEnvelope className="toast-icon info" />
+          <div>
+            <strong>Custom Email Domain</strong>
+            <br />
+            <small>Sending to custom domain: {email.split('@')[1]}</small>
+          </div>
+        </div>
+      ), {
+        duration: 3000,
+        position: 'top-right',
+        style: {
+          background: '#f3e5f5',
+          color: '#7b1fa2',
+          border: '1px solid #ce93d8'
+        }
+      });
+    }
+  };
 
   // Form states
   const [testForm, setTestForm] = useState({
@@ -60,6 +178,9 @@ const EmailForm = ({ apiStatus }) => {
       return;
     }
 
+    // Show email type toast
+    showEmailTypeToast(testForm.to, 'test');
+
     setIsLoading(true);
     setResponse(null);
 
@@ -76,7 +197,7 @@ const EmailForm = ({ apiStatus }) => {
       });
 
       setResponse({ type: 'success', data: response.data });
-      toast.success('Test email sent successfully! 🎉');
+      toast.success('Test email sent successfully!');
       
       // Reset form
       setTestForm({ to: '', from: '', message: '' });
@@ -120,6 +241,9 @@ const EmailForm = ({ apiStatus }) => {
       return;
     }
 
+    // Show email type toast
+    showEmailTypeToast(customForm.to, 'custom');
+
     setIsLoading(true);
     setResponse(null);
 
@@ -137,7 +261,7 @@ const EmailForm = ({ apiStatus }) => {
       });
 
       setResponse({ type: 'success', data: response.data });
-      toast.success('Custom email sent successfully! 🎉');
+      toast.success('Custom email sent successfully!');
       
       // Reset form
       setCustomForm({ to: '', subject: '', message: '', from: '' });
@@ -171,14 +295,14 @@ const EmailForm = ({ apiStatus }) => {
           className={`tab-button ${activeTab === 'test' ? 'active' : ''}`}
           onClick={() => setActiveTab('test')}
         >
-          🧪 Test Email
+          <FaFlask /> Test Email
         </button>
         <button
           type="button"
           className={`tab-button ${activeTab === 'custom' ? 'active' : ''}`}
           onClick={() => setActiveTab('custom')}
         >
-          ✉️ Custom Email
+          <FaEnvelope /> Custom Email
         </button>
       </div>
 
@@ -228,7 +352,7 @@ const EmailForm = ({ apiStatus }) => {
             className={`btn btn-primary ${isLoading ? 'btn-loading' : ''}`}
             disabled={isLoading || apiStatus !== 'online'}
           >
-            {isLoading ? 'Sending...' : '🚀 Send Test Email'}
+            {isLoading ? 'Sending...' : <><FaRocket /> Send Test Email</>}
           </button>
         </form>
       )}
@@ -294,7 +418,7 @@ const EmailForm = ({ apiStatus }) => {
             className={`btn btn-primary ${isLoading ? 'btn-loading' : ''}`}
             disabled={isLoading || apiStatus !== 'online'}
           >
-            {isLoading ? 'Sending...' : '📧 Send Custom Email'}
+            {isLoading ? 'Sending...' : <><FaEnvelope /> Send Custom Email</>}
           </button>
         </form>
       )}
@@ -302,7 +426,7 @@ const EmailForm = ({ apiStatus }) => {
       {response && (
         <div className={`response-display ${response.type}`}>
           <h4>
-            {response.type === 'success' ? '✅ Success!' : '❌ Error'}
+            {response.type === 'success' ? <><FaCheckCircle /> Success!</> : <><FaTimesCircle /> Error</>}
           </h4>
           <p>
             {response.type === 'success' 
